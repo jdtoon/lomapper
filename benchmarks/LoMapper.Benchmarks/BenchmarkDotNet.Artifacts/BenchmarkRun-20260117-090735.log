@@ -1,0 +1,3 @@
+// Validating benchmarks:
+//    * You use JoinSummary options, but provided configurations cannot be joined. Only one Orderer per benchmark cases is allowed.
+
