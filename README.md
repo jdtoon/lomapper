@@ -1,6 +1,6 @@
 # LoMapper
 
-**Lightweight Object Mapper** — Compile-time mapping for .NET using Roslyn Source Generators.
+**A tiny, focused object mapper** — Generate mapping code at compile time using Roslyn Source Generators.
 
 [![NuGet](https://img.shields.io/nuget/v/LoMapper.svg)](https://www.nuget.org/packages/LoMapper/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/LoMapper.svg)](https://www.nuget.org/packages/LoMapper/)
@@ -9,18 +9,16 @@
 [![.NET](https://img.shields.io/badge/.NET-Standard%202.0+-purple.svg)](https://dotnet.microsoft.com/)
 [![GitHub Stars](https://img.shields.io/github/stars/jdtoon/lomapper?style=social)](https://github.com/jdtoon/lomapper)
 
-## Why LoMapper?
+## What is LoMapper?
 
-Traditional mappers like AutoMapper use **runtime reflection**, which means:
-- ❌ Startup lag as types are scanned
-- ❌ Runtime errors when mappings are invalid
-- ❌ Performance overhead from reflection
+LoMapper is a small library that generates mapping code at compile time, saving you from writing repetitive property-by-property assignments by hand.
 
-LoMapper generates mapping code **at compile time**:
-- ✅ **Zero runtime overhead** — generated code is as fast as hand-written
-- ✅ **Compile-time errors** — catch mapping issues before you ship
-- ✅ **IntelliSense support** — see generated methods in your IDE
-- ✅ **No magic** — inspect the generated code anytime
+**Benefits:**
+- ✅ **Less boilerplate** — Stop writing manual property assignments
+- ✅ **Compile-time safety** — Catch mapping issues during build, not at runtime
+- ✅ **Zero runtime overhead** — No reflection, no scanning, just generated code
+- ✅ **Debuggable** — F12 into generated code like it's your own
+- ✅ **Simple** — Just add attributes to partial classes
 
 ## Quick Start
 
@@ -144,48 +142,32 @@ public class Target { public int Id { get; set; } public string Extra { get; set
 
 ## Benchmarks
 
-**LoMapper is faster than hand-written code!** 🚀
+**LPerformance
 
-Real-world benchmark results mapping 10,000 objects:
+LoMapper generates efficient code that performs well. Benchmark results mapping 10,000 objects:
 
-| Method     | Mean       | vs LoMapper | Memory    |
-|------------|------------|-------------|-----------|
-| **LoMapper**   | **174 μs** ⚡ | **Baseline** | 781 KB    |
-| Mapster    | 182 μs     | 1.04x slower| 781 KB    |
-| Manual     | 208 μs     | 1.19x slower| 781 KB    |
-| AutoMapper | 1,278 μs   | **7.3x slower** 🐌 | 959 KB    |
+| Method     | Mean       | Memory    |
+|------------|------------|-----------|
+| **LoMapper**   | **174 μs** | 781 KB    |
+| Manual     | 208 μs     | 781 KB    |
 
-*LoMapper is 16% faster than hand-written code and 7.3x faster than AutoMapper.*
+*LoMapper matches the performance and memory characteristics of hand-written mapping code.*
+
+The generated code uses straightforward property assignments with no reflection or runtime overhead. For most applications, the performance is more than sufficient and comparable to writing the mappings yourself.
 
 <details>
-<summary>Full Benchmark Results (Click to expand)</summary>
+<summary>Full Benchmark Details (Click to expand)</summary>
 
-**100 items:**
-- LoMapper: 1.67 μs
-- Mapster: 1.62 μs
-- Manual: 1.83 μs  
-- AutoMapper: 2.11 μs (27% slower)
+Tested on Intel Core i7-10870H, .NET 8.0.23, Windows 11 using BenchmarkDotNet v0.14.0.
 
-**1,000 items:**
-- LoMapper: 15.5 μs
-- Mapster: 17.0 μs
-- Manual: 18.2 μs
-- AutoMapper: 19.1 μs (23% slower)
+**100 items:** 1.67 μs  
+**1,000 items:** 15.5 μs  
+**10,000 items:** 174 μs
 
-**10,000 items:**
-- LoMapper: 174 μs ⚡
-- Mapster: 182 μs
-- Manual: 208 μs
-- AutoMapper: 1,278 μs (634% slower!)
+The generated code produces clean IL that the JIT compiler can optimize effectively. Zero allocations beyond the mapped objects themselves.
 
-Environment: Intel Core i7-10870H, .NET 8.0.23, Windows 11  
-BenchmarkDotNet v0.14.0 | [Full Results](BenchmarkDotNet.Artifacts/results/)
+[Full Results](BenchmarkDotNet.Artifacts/results/)
 </details>
-
-**Why is LoMapper faster than manual code?**  
-Our code generator produces highly optimized IL that's easier for the JIT compiler to optimize. The generated code uses aggressive inlining and cache-friendly memory access patterns.
-
-Run benchmarks yourself:
 ```bash
 cd benchmarks/LoMapper.Benchmarks
 dotnet run -c Release
@@ -219,6 +201,26 @@ Find generated files in: `obj/GeneratedFiles/LoMapper.Generator/`
 | Custom transforms | ✅ | ✅ | ✅ | ✅ |
 | Flattening/unflattening | 🔜 v0.2 | ✅ | ✅ | Manual |
 | Projection (IQueryable) | 🔜 v1.0 | ✅ | ✅ | Manual |
+Why Use LoMapper?
+
+**vs Writing Mappings Manually:**
+- Less repetitive code to write and maintain
+- Compile-time validation catches errors early
+- Automatic updates when models change
+- Similar or better performance
+
+**When LoMapper Might Help:**
+- You have many DTOs to map
+- You want compile-time safety without runtime cost
+- You prefer code generation over reflection
+- You like seeing exactly what code runs (F12 into generated code)
+
+**Current Limitations:**
+- Flattening/unflattening not yet supported (planned for v0.2)
+- Expression projection for IQueryable not yet supported (planned for v1.0)
+- Some advanced mapping scenarios may need manual code
+
+LoMapper is a focused tool that does one thing well: generate simple, efficient mapping code. It's meant to complement your toolkit, not replace everything else.
 
 ## Requirements
 
@@ -235,4 +237,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**LoMapper** — *Write less code. Ship faster. No reflection.*
+**LoMapper** — A tiny tool to help you write less mapping code.
