@@ -40,13 +40,10 @@ jobs:
         dotnet pack src/LoMapper.Abstractions -c Release -o ./nuget-output /p:Version=${{ steps.version.outputs.VERSION }}
         dotnet pack src/LoMapper.Generator -c Release -o ./nuget-output /p:Version=${{ steps.version.outputs.VERSION }}
 
-    - name: Create GitHub Release
-      uses: ncipollo/release-action@v1
+    - name: Upload NuGet packages to release
+      uses: softprops/action-gh-release@v2
       with:
-        artifacts: "./nuget-output/*.nupkg"
-        bodyFile: "CHANGELOG.md"
-        draft: false
-        prerelease: false
+        files: ./nuget-output/*.nupkg
 
     - name: Publish to NuGet
       if: env.NUGET_API_KEY != ''
