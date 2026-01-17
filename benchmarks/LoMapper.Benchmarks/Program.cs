@@ -3,8 +3,7 @@ using BenchmarkDotNet.Running;
 using LoMapper.Benchmarks.Benchmarks;
 
 // Run all benchmarks
-var config = DefaultConfig.Instance
-    .WithOptions(ConfigOptions.JoinSummary);
+var config = DefaultConfig.Instance;
 
 Console.WriteLine("=== LoMapper Benchmark Suite ===");
 Console.WriteLine();

@@ -3,8 +3,11 @@
 **Lightweight Object Mapper** — Compile-time mapping for .NET using Roslyn Source Generators.
 
 [![NuGet](https://img.shields.io/nuget/v/LoMapper.svg)](https://www.nuget.org/packages/LoMapper/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/LoMapper.svg)](https://www.nuget.org/packages/LoMapper/)
+[![Build Status](https://github.com/jdtoon/lomapper/actions/workflows/ci.yml/badge.svg)](https://github.com/jdtoon/lomapper/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET](https://img.shields.io/badge/.NET-Standard%202.0+-purple.svg)](https://dotnet.microsoft.com/)
+[![GitHub Stars](https://img.shields.io/github/stars/jdtoon/lomapper?style=social)](https://github.com/jdtoon/lomapper)
 
 ## Why LoMapper?
 
