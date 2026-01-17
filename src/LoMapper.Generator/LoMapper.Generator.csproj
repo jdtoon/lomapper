@@ -8,7 +8,6 @@
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 
     <PackageId>LoMapper</PackageId>
-    <Version>0.1.1</Version>
     <Description>LoMapper - Lightweight Object Mapper using compile-time source generation. Zero runtime reflection.</Description>
     <Authors>LoMapper Contributors</Authors>
     <PackageProjectUrl>https://github.com/jdtoon/lomapper</PackageProjectUrl>

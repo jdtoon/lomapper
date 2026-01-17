@@ -1,9 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 env:
   NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
@@ -24,10 +23,10 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Extract version from tag
+    - name: Extract version from release tag
       id: version
       run: |
-        VERSION=${GITHUB_REF#refs/tags/v}
+        VERSION=${GITHUB_REF_NAME#v}
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Build Release
