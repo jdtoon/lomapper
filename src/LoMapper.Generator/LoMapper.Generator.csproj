@@ -6,16 +6,25 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-    
+
     <PackageId>LoMapper</PackageId>
+    <Version>0.1.0</Version>
     <Description>LoMapper - Lightweight Object Mapper using compile-time source generation. Zero runtime reflection.</Description>
+    <Authors>LoMapper Contributors</Authors>
+    <PackageProjectUrl>https://github.com/jdtoon/lomapper</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/jdtoon/lomapper</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageTags>mapper;sourcegenerator;roslyn;dto;mapping</PackageTags>
-    
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
     <!-- Analyzer/Generator packaging -->
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DevelopmentDependency>true</DevelopmentDependency>
     <IsRoslynComponent>true</IsRoslynComponent>
-    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
   <ItemGroup>

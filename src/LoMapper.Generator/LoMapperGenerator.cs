@@ -15,6 +15,10 @@ namespace LoMapper.Generator;
 [Generator(LanguageNames.CSharp)]
 public sealed class LoMapperGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// Initializes the incremental generator by setting up syntax and semantic analysis pipelines.
+    /// </summary>
+    /// <param name="context">The initialization context provided by Roslyn.</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         // Find all partial classes with [Mapper] attribute

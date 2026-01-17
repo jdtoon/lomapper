@@ -5,10 +5,19 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
-    
+
     <PackageId>LoMapper.Abstractions</PackageId>
+    <Version>0.1.0</Version>
     <Description>Attributes and interfaces for LoMapper - the compile-time object mapper</Description>
+    <Authors>LoMapper Contributors</Authors>
+    <PackageProjectUrl>https://github.com/lomapper/lomapper</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/lomapper/lomapper</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageTags>mapper;sourcegenerator;roslyn;dto;mapping;attributes</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <ItemGroup>
