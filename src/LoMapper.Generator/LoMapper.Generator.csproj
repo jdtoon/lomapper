@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    
+    <PackageId>LoMapper</PackageId>
+    <Description>LoMapper - Lightweight Object Mapper using compile-time source generation. Zero runtime reflection.</Description>
+    <PackageTags>mapper;sourcegenerator;roslyn;dto;mapping</PackageTags>
+    
+    <!-- Analyzer/Generator packaging -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0" PrivateAssets="all" />
+    <PackageReference Include="PolySharp" Version="1.14.1" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LoMapper.Abstractions\LoMapper.Abstractions.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Pack the generator DLL into the analyzers folder -->
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <!-- Pack the abstractions DLL for both analyzers and lib (runtime) -->
+    <None Include="$(OutputPath)\LoMapper.Abstractions.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\LoMapper.Abstractions.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+  </ItemGroup>
+
+</Project>

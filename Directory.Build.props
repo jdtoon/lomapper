@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <Authors>LoMapper Contributors</Authors>
+    <Company>LoMapper</Company>
+    <Product>LoMapper</Product>
+    <Copyright>Copyright © 2026 LoMapper Contributors</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/lomapper/lomapper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/lomapper/lomapper</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>mapper;sourcegenerator;roslyn;dto;mapping</PackageTags>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+</Project>

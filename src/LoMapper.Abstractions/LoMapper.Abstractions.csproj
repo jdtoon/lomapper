@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    
+    <PackageId>LoMapper.Abstractions</PackageId>
+    <Description>Attributes and interfaces for LoMapper - the compile-time object mapper</Description>
+    <PackageTags>mapper;sourcegenerator;roslyn;dto;mapping;attributes</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PolySharp" Version="1.14.1" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
