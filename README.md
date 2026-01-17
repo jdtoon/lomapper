@@ -187,21 +187,21 @@ Find generated files in: `obj/GeneratedFiles/LoMapper.Generator/`
 
 ## Comparison
 
-| Feature | LoMapper | AutoMapper | Mapster | Manual Code |
-|---------|:--------:|:----------:|:-------:|:-----------:|
-| **Performance (10K items)** | **174 μs** ⚡ | 1,278 μs | 182 μs | 208 μs |
-| vs Baseline | **16% faster** | 7.3x slower | 12% slower | Baseline |
-| Memory overhead | **0%** | +23% | 0% | - |
-| Compile-time generation | ✅ | ❌ | ❌ | N/A |
-| Zero runtime reflection | ✅ | ❌ | ❌ | ✅ |
-| Compile-time error detection | ✅ | ❌ | ❌ | ✅ |
-| IntelliSense support | ✅ | ❌ | ❌ | ✅ |
-| Nested object mapping | ✅ | ✅ | ✅ | ✅ |
-| Collection mapping | ✅ | ✅ | ✅ | ✅ |
-| Custom transforms | ✅ | ✅ | ✅ | ✅ |
-| Flattening/unflattening | 🔜 v0.2 | ✅ | ✅ | Manual |
-| Projection (IQueryable) | 🔜 v1.0 | ✅ | ✅ | Manual |
-Why Use LoMapper?
+| Feature | LoMapper | Manual Code |
+|---------|:--------:|:-----------:|
+| **Performance (10K items)** | **174 μs** | 208 μs |
+| Memory overhead | **0%** | - |
+| Compile-time generation | ✅ | N/A |
+| Zero runtime reflection | ✅ | ✅ |
+| Compile-time error detection | ✅ | ✅ |
+| IntelliSense support | ✅ | ✅ |
+| Nested object mapping | ✅ | ✅ |
+| Collection mapping | ✅ | ✅ |
+| Custom transforms | ✅ | ✅ |
+| Flattening/unflattening | 🔜 v0.2 | Manual |
+| Projection (IQueryable) | 🔜 v1.0 | Manual |
+
+## Why Use LoMapper?
 
 **vs Writing Mappings Manually:**
 - Less repetitive code to write and maintain
