@@ -15,6 +15,7 @@
     <RepositoryUrl>https://github.com/jdtoon/lomapper</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>mapper;sourcegenerator;roslyn;dto;mapping</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
@@ -33,6 +34,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LoMapper.Abstractions\LoMapper.Abstractions.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
