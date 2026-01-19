@@ -74,4 +74,37 @@ internal static class Diagnostics
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    /// <summary>
+    /// LOM007: Invalid nested property path in flatten (Error).
+    /// </summary>
+    public static readonly DiagnosticDescriptor InvalidFlattenPath = new(
+        id: "LOM007",
+        title: "Invalid flatten property path",
+        messageFormat: "Nested property path '{0}' specified in [FlattenProperty] is invalid on type '{1}'. Property '{2}' was not found.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    /// <summary>
+    /// LOM008: Target property not found in flatten (Error).
+    /// </summary>
+    public static readonly DiagnosticDescriptor FlattenTargetNotFound = new(
+        id: "LOM008",
+        title: "Flatten target property not found",
+        messageFormat: "Target property '{0}' specified in [FlattenProperty] was not found on type '{1}'.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    /// <summary>
+    /// LOM009: Type mismatch in flatten mapping (Error).
+    /// </summary>
+    public static readonly DiagnosticDescriptor FlattenTypeMismatch = new(
+        id: "LOM009",
+        title: "Flatten type mismatch",
+        messageFormat: "Cannot flatten property '{0}' from type '{1}' to type '{2}' specified in [FlattenProperty]. Types are incompatible.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

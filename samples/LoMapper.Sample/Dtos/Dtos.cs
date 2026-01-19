@@ -24,3 +24,16 @@ public class AddressDto
     public string City { get; set; } = string.Empty;
     public string FullLocation { get; set; } = string.Empty;
 }
+/// <summary>
+/// Flattened user profile data transfer object.
+/// Demonstrates flattening nested address properties into the top-level DTO.
+/// </summary>
+public class UserProfileDto
+{
+    public int Id { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    // Flattened properties from nested Address object
+    public string? City { get; set; }
+    public string? Country { get; set; }
+}

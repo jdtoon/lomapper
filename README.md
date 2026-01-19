@@ -101,6 +101,46 @@ public partial class UserMapper
 }
 ```
 
+### Flatten Properties
+Map nested object properties to flat target properties:
+
+```csharp
+[Mapper]
+public partial class UserMapper
+{
+    [FlattenProperty("Address.City", nameof(UserDto.AddressCity))]
+    [FlattenProperty("Address.ZipCode", nameof(UserDto.AddressZipCode))]
+    public partial UserDto Map(UserEntity entity);
+}
+```
+
+Features:
+- ✅ Deep nesting support (e.g., `Order.Customer.Address.City`)
+- ✅ Null-safe navigation (`?.`) automatically generated
+- ✅ Type-safe with compile-time validation
+- ✅ Works with both reference and value types
+- ✅ Combine with `[MapProperty]` and `[MapIgnore]`
+
+### Flatten Properties
+Map nested object properties to flat target properties:
+
+```csharp
+[Mapper]
+public partial class UserMapper
+{
+    [FlattenProperty("Address.City", nameof(UserDto.AddressCity))]
+    [FlattenProperty("Address.ZipCode", nameof(UserDto.AddressZipCode))]
+    public partial UserDto Map(UserEntity entity);
+}
+```
+
+Features:
+- ✅ Deep nesting support (e.g., `Order.Customer.Address.City`)
+- ✅ Null-safe navigation (`?.`) automatically generated
+- ✅ Type-safe with compile-time validation
+- ✅ Works with both reference and value types
+- ✅ Combine with `[MapProperty]` and `[MapIgnore]`
+
 ### Nested Objects
 For nested objects, declare explicit mapper methods:
 
@@ -131,6 +171,18 @@ LoMapper catches mapping issues **before your code runs**:
 | LOM001 | ⚠️ Warning | Target property has no matching source property |
 | LOM002 | ❌ Error | Property types are incompatible |
 | LOM003 | ❌ Error | Nested object requires mapper method |
+| LOM004 | ❌ Error | Invalid transform method signature |
+| LOM005 | ❌ Error | Source property not found |
+| LOM006 | ❌ Error | Target property not found |
+| LOM007 | ❌ Error | Invalid flatten property path |
+| LOM008 | ❌ Error | Flatten target property not found |
+| LOM009 | ❌ Error | Flatten type mismatch |
+| LOM004 | ❌ Error | Invalid transform method signature |
+| LOM005 | ❌ Error | Source property not found |
+| LOM006 | ❌ Error | Target property not found |
+| LOM007 | ❌ Error | Invalid flatten property path |
+| LOM008 | ❌ Error | Flatten target property not found |
+| LOM009 | ❌ Error | Flatten type mismatch |
 
 Example:
 ```csharp
@@ -198,7 +250,7 @@ Find generated files in: `obj/GeneratedFiles/LoMapper.Generator/`
 | Nested object mapping | ✅ | ✅ |
 | Collection mapping | ✅ | ✅ |
 | Custom transforms | ✅ | ✅ |
-| Flattening/unflattening | 🔜 v0.2 | Manual |
+| Flattening/unflattening | ✅ v0.3 | Manual |
 | Projection (IQueryable) | 🔜 v1.0 | Manual |
 
 ## Why Use LoMapper?
@@ -216,7 +268,6 @@ Find generated files in: `obj/GeneratedFiles/LoMapper.Generator/`
 - You like seeing exactly what code runs (F12 into generated code)
 
 **Current Limitations:**
-- Flattening/unflattening not yet supported (planned for v0.2)
 - Expression projection for IQueryable not yet supported (planned for v1.0)
 - Some advanced mapping scenarios may need manual code
 
