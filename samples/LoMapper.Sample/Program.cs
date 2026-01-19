@@ -49,8 +49,9 @@ var userEntity = new UserEntity
 // Create mapper instance
 var mapper = new UserMapper();
 
-// Map entity to DTO
+// Map entity to DTO (baseline)
 var userDto = mapper.MapUser(userEntity);
+// Map with lifecycle hooks (v0.4.0): validation + audit tag
 var userDtoWithHooks = mapper.MapUserWithHooks(userEntity);
 
 // Display results

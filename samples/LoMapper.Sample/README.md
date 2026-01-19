@@ -1,10 +1,10 @@
 # LoMapper.Sample
 
-This sample console app shows LoMapper usage end-to-end. Run `dotnet run --project samples/LoMapper.Sample/LoMapper.Sample.csproj` to see the generated mappings in action.
+This sample console app shows LoMapper usage end-to-end (updated for **v0.4.0**). Run `dotnet run --project samples/LoMapper.Sample/LoMapper.Sample.csproj` to see the generated mappings in action.
 
 ## Highlights
 - Basic, flattened, and collection mapping via the mapper in [samples/LoMapper.Sample/Mappers/UserMapper.cs](samples/LoMapper.Sample/Mappers/UserMapper.cs).
-- Lifecycle hooks demonstrated by `MapUserWithHooks`, which validates the source and appends an audit tag in `AfterMap`.
+- Lifecycle hooks (v0.4.0): `MapUserWithHooks` validates input with `[BeforeMap]` and appends an audit tag in `[AfterMap]`—see console output for the audit trail.
 - Generated code artifacts available under `samples/LoMapper.Sample/obj/GeneratedFiles` after build.
 
 ## Circular reference detection (LOM010)

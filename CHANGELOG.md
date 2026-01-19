@@ -58,6 +58,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.4.0] - 2026-01-19
+
+### Added
+- **Lifecycle hooks** with `[BeforeMap]` and `[AfterMap]` attributes, including constructor-aware code generation and ordering guarantees (before mapping/after mapping)
+- **Circular reference detection** diagnostic LOM010 to prevent cyclic mapper graphs at build time
+- **Samples** updated with hook-driven mapper (`MapUserWithHooks`) and audit trail output
+- **Documentation** refreshed for hooks, circular detection, and diagnostics table updates
+
+### Changed
+- Improved constructor parameter matching for hook-enabled mappers
+- Tightened diagnostics coverage and tests around new features
+
+### Tests
+- Expanded hook and circular-detection test suites (51 tests total)
+
+---
+
 ## [0.3.0] - 2026-01-19
 
 ### Added
@@ -84,12 +101,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.2.0]
+
+Version reserved (not published). Planned items were rolled into subsequent releases (0.3.0 flattening and 0.4.0 hooks/circular detection).
+
+---
+
 ## Future Roadmap
 
-### 0.2.0
-- [ ] Circular reference detection
-- [ ] Better error messages for complex scenarios
+### 0.5.0
 - [ ] Support for custom collection types
+- [ ] Better error messages for complex scenarios
 
 ### 1.0.0
 - [ ] Expression projection (IQueryable)
