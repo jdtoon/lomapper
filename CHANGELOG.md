@@ -58,16 +58,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.3.0] - 2026-01-19
+
+### Added
+- **Flattening Support**
+  - New `[FlattenProperty]` attribute for mapping nested properties to flat properties
+  - Deep nesting support: Traverse nested object chains (e.g., `Address.City.Country.Code`)
+  - Null-safe code generation with `?.` operator
+  - Type-compatible source and target properties with compile-time validation
+  - Combine flattening with `[MapProperty]` and `[MapIgnore]`
+  - Works with both reference and value types
+
+- **New Diagnostics**
+  - LOM007: Invalid flatten property path (property doesn't exist)
+  - LOM008: Flatten target property not found on type
+  - LOM009: Type mismatch in flatten mapping (incompatible types)
+
+- **Tests**
+  - 10 comprehensive flatten tests covering all scenarios
+
+### Changed
+- Updated README with flatten feature documentation and examples
+- Updated feature comparison table: flatten now marked as supported in v0.3
+- Updated roadmap to reflect completion of flatten feature
+
+---
+
 ## Future Roadmap
 
 ### 0.2.0
 - [ ] Circular reference detection
 - [ ] Better error messages for complex scenarios
 - [ ] Support for custom collection types
-
-### 0.3.0
-- [ ] Flattening support (Source.Address.City -> TargetAddress)
-- [ ] Unflattening support
 
 ### 1.0.0
 - [ ] Expression projection (IQueryable)

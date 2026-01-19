@@ -11,6 +11,7 @@ namespace LoMapper.Sample.Mappers;
 /// - Nested object mapping
 /// - Collection mapping (List to List, List to Array)
 /// - Ignored properties with [MapIgnore]
+/// - Flattening nested properties with [FlattenProperty]
 /// </summary>
 [Mapper]
 public partial class UserMapper
@@ -22,6 +23,16 @@ public partial class UserMapper
     [MapProperty(nameof(UserEntity.FirstName), nameof(UserDto.FullName), Transform = nameof(FormatFullName))]
     [MapProperty(nameof(UserEntity.DateOfBirth), nameof(UserDto.Age), Transform = nameof(CalculateAge))]
     public partial UserDto MapUser(UserEntity entity);
+
+    /// <summary>
+    /// Maps a UserEntity to a flattened UserProfileDto.
+    /// Demonstrates flattening nested address properties into the top-level DTO.
+    /// The [FlattenProperty] attributes extract Address.City and Address.Country
+    /// into separate City and Country properties on the DTO.
+    /// </summary>
+    [FlattenProperty("Address.City", nameof(UserProfileDto.City))]
+    [FlattenProperty("Address.Country", nameof(UserProfileDto.Country))]
+    public partial UserProfileDto MapUserFlattened(UserEntity entity);
 
     /// <summary>
     /// Maps an AddressEntity to AddressDto.
