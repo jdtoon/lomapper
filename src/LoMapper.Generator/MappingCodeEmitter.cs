@@ -114,20 +114,119 @@ internal sealed class MappingCodeEmitter
         // Build property mappings
         var mappings = BuildPropertyMappings(method);
 
+        // Build flatten mappings
+        var flattenMappings = BuildFlattenMappings(method);
+
         // Check for constructor-based initialization
         var targetConstructor = GetBestConstructor(method.TargetType, mappings);
 
         if (targetConstructor is not null && targetConstructor.Parameters.Length > 0)
         {
-            EmitConstructorBasedMapping(method, mappings, targetConstructor);
+            EmitConstructorBasedMapping(method, mappings, targetConstructor, flattenMappings);
         }
         else
         {
-            EmitPropertyBasedMapping(method, mappings);
+            EmitPropertyBasedMapping(method, mappings, flattenMappings);
         }
 
         _indentLevel--;
         AppendLine("}");
+    }
+
+    private List<FlattenMapping> BuildFlattenMappings(MapperMethodInfo method)
+    {
+        var flattenMappings = new List<FlattenMapping>();
+        var targetProperties = GetAllProperties(method.TargetType)
+            .ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var flatten in method.FlattenMappings)
+        {
+            // Validate target property exists
+            if (!targetProperties.TryGetValue(flatten.TargetProperty, out var targetProp))
+            {
+                _context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.FlattenTargetNotFound,
+                    Location.None,
+                    flatten.TargetProperty,
+                    method.TargetType.Name));
+                continue;
+            }
+
+            // Skip read-only properties
+            if (targetProp.SetMethod is null || targetProp.SetMethod.DeclaredAccessibility == Accessibility.Private)
+            {
+                continue;
+            }
+
+            // Resolve nested property path
+            var resolvedType = ResolveNestedPropertyPath(method.SourceType, flatten.SourcePropertyPath, out var isValid);
+            if (!isValid || resolvedType is null)
+            {
+                _context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.InvalidFlattenPath,
+                    Location.None,
+                    flatten.SourcePropertyPath,
+                    method.SourceType.Name,
+                    GetLastPropertyNameFromPath(flatten.SourcePropertyPath)));
+                continue;
+            }
+
+            // Check type compatibility
+            if (!IsTypeCompatible(resolvedType, targetProp.Type))
+            {
+                _context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.FlattenTypeMismatch,
+                    Location.None,
+                    flatten.SourcePropertyPath,
+                    resolvedType.Name,
+                    targetProp.Type.Name));
+                continue;
+            }
+
+            flattenMappings.Add(new FlattenMapping(flatten.SourcePropertyPath, targetProp, resolvedType));
+        }
+
+        return flattenMappings;
+    }
+
+    private ITypeSymbol? ResolveNestedPropertyPath(ITypeSymbol sourceType, string propertyPath, out bool isValid)
+    {
+        isValid = true;
+        var parts = propertyPath.Split('.');
+        var currentType = sourceType;
+
+        foreach (var part in parts)
+        {
+            var properties = GetAllProperties(currentType);
+            var prop = properties.FirstOrDefault(p => string.Equals(p.Name, part, StringComparison.OrdinalIgnoreCase));
+
+            if (prop is null)
+            {
+                isValid = false;
+                return null;
+            }
+
+            currentType = prop.Type;
+        }
+
+        return currentType;
+    }
+
+    private string GetLastPropertyNameFromPath(string propertyPath)
+    {
+        var parts = propertyPath.Split('.');
+        return parts.Length > 0 ? parts[^1] : propertyPath;
+    }
+
+    private bool IsTypeCompatible(ITypeSymbol source, ITypeSymbol target)
+    {
+        // Same type
+        if (SymbolEqualityComparer.Default.Equals(source, target))
+            return true;
+
+        // Check for implicit/explicit conversion
+        var conversions = _compilation.ClassifyConversion(source, target);
+        return conversions.IsImplicit || conversions.IsExplicit;
     }
 
     private List<PropertyMapping> BuildPropertyMappings(MapperMethodInfo method)
@@ -141,10 +240,21 @@ internal sealed class MappingCodeEmitter
         var customMappings = method.PropertyMappings
             .ToDictionary(m => m.TargetProperty, m => m, StringComparer.OrdinalIgnoreCase);
 
+        // Build set of properties that will be handled by flatten mappings
+        var flattenTargets = new HashSet<string>(
+            method.FlattenMappings.Select(f => f.TargetProperty),
+            StringComparer.OrdinalIgnoreCase);
+
         foreach (var targetProp in targetProperties)
         {
             // Skip ignored properties
             if (method.IgnoredProperties.Contains(targetProp.Name))
+            {
+                continue;
+            }
+
+            // Skip flatten-mapped properties (will be handled separately)
+            if (flattenTargets.Contains(targetProp.Name))
             {
                 continue;
             }
@@ -197,19 +307,30 @@ internal sealed class MappingCodeEmitter
         return mappings;
     }
 
-    private void EmitPropertyBasedMapping(MapperMethodInfo method, List<PropertyMapping> mappings)
+    private void EmitPropertyBasedMapping(MapperMethodInfo method, List<PropertyMapping> mappings, List<FlattenMapping> flattenMappings)
     {
         var returnType = method.TargetType.ToDisplayString();
         AppendLine($"return new {returnType}");
         AppendLine("{");
         _indentLevel++;
 
-        for (int i = 0; i < mappings.Count; i++)
+        var allMappingCount = mappings.Count + flattenMappings.Count;
+        var currentIndex = 0;
+
+        for (int i = 0; i < mappings.Count; i++, currentIndex++)
         {
             var mapping = mappings[i];
             var assignment = GetPropertyAssignment(mapping, method.ParameterName);
-            var comma = i < mappings.Count - 1 ? "," : "";
+            var comma = currentIndex < allMappingCount - 1 ? "," : "";
             AppendLine($"{mapping.Target.Name} = {assignment}{comma}");
+        }
+
+        for (int i = 0; i < flattenMappings.Count; i++, currentIndex++)
+        {
+            var flatten = flattenMappings[i];
+            var assignment = GetFlattenAssignment(flatten, method.ParameterName);
+            var comma = currentIndex < allMappingCount - 1 ? "," : "";
+            AppendLine($"{flatten.Target.Name} = {assignment}{comma}");
         }
 
         _indentLevel--;
@@ -219,16 +340,19 @@ internal sealed class MappingCodeEmitter
     private void EmitConstructorBasedMapping(
         MapperMethodInfo method,
         List<PropertyMapping> mappings,
-        IMethodSymbol constructor)
+        IMethodSymbol constructor,
+        List<FlattenMapping> flattenMappings)
     {
         var returnType = method.TargetType.ToDisplayString();
         var ctorParams = new List<string>();
         var remainingMappings = new List<PropertyMapping>(mappings);
+        var remainingFlattens = new List<FlattenMapping>(flattenMappings);
 
         // Match constructor parameters to mappings
         foreach (var param in constructor.Parameters)
         {
             var mapping = remainingMappings.FirstOrDefault(m =>
+
                 string.Equals(m.Target.Name, param.Name, StringComparison.OrdinalIgnoreCase));
 
             if (mapping is not null)
@@ -242,19 +366,30 @@ internal sealed class MappingCodeEmitter
             }
         }
 
-        // If we have remaining properties, use object initializer
-        if (remainingMappings.Count > 0)
+        // If we have remaining properties or flattens, use object initializer
+        if (remainingMappings.Count > 0 || remainingFlattens.Count > 0)
         {
             AppendLine($"return new {returnType}({string.Join(", ", ctorParams)})");
             AppendLine("{");
             _indentLevel++;
 
-            for (int i = 0; i < remainingMappings.Count; i++)
+            var allRemaining = remainingMappings.Count + remainingFlattens.Count;
+            var currentIndex = 0;
+
+            for (int i = 0; i < remainingMappings.Count; i++, currentIndex++)
             {
                 var mapping = remainingMappings[i];
                 var assignment = GetPropertyAssignment(mapping, method.ParameterName);
-                var comma = i < remainingMappings.Count - 1 ? "," : "";
+                var comma = currentIndex < allRemaining - 1 ? "," : "";
                 AppendLine($"{mapping.Target.Name} = {assignment}{comma}");
+            }
+
+            for (int i = 0; i < remainingFlattens.Count; i++, currentIndex++)
+            {
+                var flatten = remainingFlattens[i];
+                var assignment = GetFlattenAssignment(flatten, method.ParameterName);
+                var comma = currentIndex < allRemaining - 1 ? "," : "";
+                AppendLine($"{flatten.Target.Name} = {assignment}{comma}");
             }
 
             _indentLevel--;
@@ -326,6 +461,37 @@ internal sealed class MappingCodeEmitter
             targetTypeName));
 
         return $"default! /* LOM003: Cannot map {sourceTypeName} to {targetTypeName} */";
+    }
+
+    private string GetFlattenAssignment(FlattenMapping flatten, string paramName)
+    {
+        // Build the property access chain (e.g., param.Address?.City)
+        var parts = flatten.SourcePropertyPath.Split('.');
+        var access = $"{paramName}.{parts[0]}";
+
+        for (int i = 1; i < parts.Length - 1; i++)
+        {
+            access += $"?.{parts[i]}";
+        }
+
+        // Last property with null coalescing
+        access += $"?.{parts[^1]}";
+        var targetType = flatten.Target.Type;
+        var defaultValue = GetDefaultValue(targetType);
+
+        return $"{access} ?? {defaultValue}";
+    }
+
+    private string GetDefaultValue(ITypeSymbol type)
+    {
+        // For reference types and nullable types, use null
+        if (type.IsReferenceType || type.NullableAnnotation == NullableAnnotation.Annotated)
+        {
+            return "null!";
+        }
+
+        // For value types, use default
+        return $"default({type.ToDisplayString()})";
     }
 
     private string? TryGetCollectionMapping(ITypeSymbol sourceType, ITypeSymbol targetType, string sourceAccess)
@@ -546,4 +712,9 @@ internal sealed class MappingCodeEmitter
         IPropertySymbol Source,
         IPropertySymbol Target,
         string? Transform);
+
+    private sealed record FlattenMapping(
+        string SourcePropertyPath,
+        IPropertySymbol Target,
+        ITypeSymbol ResolvedSourceType);
 }

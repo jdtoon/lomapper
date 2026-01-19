@@ -87,9 +87,10 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
         var sourceType = method.Parameters[0].Type;
         var targetType = method.ReturnType;
 
-        // Get [MapProperty] attributes
+        // Get [MapProperty], [MapIgnore], and [FlattenProperty] attributes
         var propertyMappings = new List<PropertyMappingConfig>();
         var ignoredProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var flattenMappings = new List<FlatteningConfig>();
 
         foreach (var attr in method.GetAttributes())
         {
@@ -124,6 +125,17 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
                     ignoredProperties.Add(targetProp!);
                 }
             }
+            else if (attrName == "LoMapper.FlattenPropertyAttribute" &&
+                     attr.ConstructorArguments.Length >= 2)
+            {
+                var sourcePath = attr.ConstructorArguments[0].Value as string;
+                var targetProp = attr.ConstructorArguments[1].Value as string;
+
+                if (!string.IsNullOrEmpty(sourcePath) && !string.IsNullOrEmpty(targetProp))
+                {
+                    flattenMappings.Add(new FlatteningConfig(sourcePath!, targetProp!));
+                }
+            }
         }
 
         return new MapperMethodInfo(
@@ -133,7 +145,8 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
             sourceType,
             targetType,
             propertyMappings.ToImmutableArray(),
-            ignoredProperties.ToImmutableHashSet(StringComparer.OrdinalIgnoreCase));
+            ignoredProperties.ToImmutableHashSet(StringComparer.OrdinalIgnoreCase),
+            flattenMappings.ToImmutableArray());
     }
 
     private static void Execute(

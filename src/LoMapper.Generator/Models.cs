@@ -22,7 +22,8 @@ internal sealed record MapperMethodInfo(
     ITypeSymbol SourceType,
     ITypeSymbol TargetType,
     ImmutableArray<PropertyMappingConfig> PropertyMappings,
-    ImmutableHashSet<string> IgnoredProperties);
+    ImmutableHashSet<string> IgnoredProperties,
+    ImmutableArray<FlatteningConfig> FlattenMappings);
 
 /// <summary>
 /// Configuration for a single property mapping from [MapProperty].
@@ -31,3 +32,10 @@ internal sealed record PropertyMappingConfig(
     string SourceProperty,
     string TargetProperty,
     string? Transform);
+
+/// <summary>
+/// Configuration for a flattening mapping from [FlattenProperty].
+/// </summary>
+internal sealed record FlatteningConfig(
+    string SourcePropertyPath,
+    string TargetProperty);
