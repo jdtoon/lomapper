@@ -107,4 +107,15 @@ internal static class Diagnostics
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    /// <summary>
+    /// LOM010: Circular reference detected in type mapping (Warning).
+    /// </summary>
+    public static readonly DiagnosticDescriptor CircularReference = new(
+        id: "LOM010",
+        title: "Circular reference detected",
+        messageFormat: "Circular reference detected in type graph: {0}. This will cause infinite recursion at runtime. Use [MapIgnore] on one of the properties to break the cycle.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

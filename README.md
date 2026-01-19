@@ -121,25 +121,27 @@ Features:
 - ✅ Works with both reference and value types
 - ✅ Combine with `[MapProperty]` and `[MapIgnore]`
 
-### Flatten Properties
-Map nested object properties to flat target properties:
+### Lifecycle Hooks (BeforeMap / AfterMap)
+Run code before or after mapping to validate inputs, set defaults, or audit results:
 
 ```csharp
 [Mapper]
 public partial class UserMapper
 {
-    [FlattenProperty("Address.City", nameof(UserDto.AddressCity))]
-    [FlattenProperty("Address.ZipCode", nameof(UserDto.AddressZipCode))]
+    [BeforeMap(nameof(ValidateUser))]
+    [AfterMap(nameof(AuditUser))]
     public partial UserDto Map(UserEntity entity);
+
+    private void ValidateUser(UserEntity entity)
+    {
+        if (string.IsNullOrWhiteSpace(entity.Email)) throw new InvalidOperationException("Email required");
+    }
+
+    private void AuditUser(UserDto dto) => dto.Tags = dto.Tags.Append("mapped").ToArray();
 }
 ```
 
-Features:
-- ✅ Deep nesting support (e.g., `Order.Customer.Address.City`)
-- ✅ Null-safe navigation (`?.`) automatically generated
-- ✅ Type-safe with compile-time validation
-- ✅ Works with both reference and value types
-- ✅ Combine with `[MapProperty]` and `[MapIgnore]`
+Hooks execute in order: `BeforeMap` runs before object creation and property assignments; `AfterMap` runs after the target is fully constructed (including constructor-based mappings).
 
 ### Nested Objects
 For nested objects, declare explicit mapper methods:
@@ -162,6 +164,26 @@ public class Source { public List<ItemEntity> Items { get; set; } }
 public class Target { public List<ItemDto> Items { get; set; } }  // ✅ Auto-mapped
 ```
 
+### Circular Reference Detection
+LoMapper detects mapper graphs that contain cycles and stops the build with diagnostic `LOM010` so you can break the loop early.
+
+```csharp
+[Mapper]
+public partial class CircularMapper
+{
+    public partial TargetA Map(SourceA source);
+    public partial TargetB Map(SourceB source);
+}
+
+public class SourceA { public SourceB? Child { get; set; } }
+public class SourceB { public SourceA? Parent { get; set; } }
+
+public class TargetA { public TargetB? Child { get; set; } }
+public class TargetB { public TargetA? Parent { get; set; } }
+```
+
+Mapping these types produces LOM010 describing the cycle. Break one side (e.g., ignore a property or change the DTO shape) to proceed.
+
 ## Compile-Time Diagnostics
 
 LoMapper catches mapping issues **before your code runs**:
@@ -177,12 +199,7 @@ LoMapper catches mapping issues **before your code runs**:
 | LOM007 | ❌ Error | Invalid flatten property path |
 | LOM008 | ❌ Error | Flatten target property not found |
 | LOM009 | ❌ Error | Flatten type mismatch |
-| LOM004 | ❌ Error | Invalid transform method signature |
-| LOM005 | ❌ Error | Source property not found |
-| LOM006 | ❌ Error | Target property not found |
-| LOM007 | ❌ Error | Invalid flatten property path |
-| LOM008 | ❌ Error | Flatten target property not found |
-| LOM009 | ❌ Error | Flatten type mismatch |
+| LOM010 | ❌ Error | Circular reference detected in mapper graph |
 
 Example:
 ```csharp
@@ -194,7 +211,7 @@ public class Target { public int Id { get; set; } public string Extra { get; set
 
 ## Benchmarks
 
-**LPerformance
+**Performance**
 
 LoMapper generates efficient code that performs well. Benchmark results mapping 10,000 objects:
 

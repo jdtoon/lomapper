@@ -58,6 +58,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.4.0] - 2026-01-19
+
+### Added
+- **Lifecycle hooks** with `[BeforeMap]` and `[AfterMap]` attributes, including constructor-aware code generation and ordering guarantees (before mapping/after mapping)
+- **Circular reference detection** diagnostic LOM010 to prevent cyclic mapper graphs at build time
+- **Samples** updated with hook-driven mapper (`MapUserWithHooks`) and audit trail output
+- **Documentation** refreshed for hooks, circular detection, and diagnostics table updates
+ - **Benchmarks** re-run and published for bulk mapping scenarios
+
+### Changed
+- Improved constructor parameter matching for hook-enabled mappers
+- Tightened diagnostics coverage and tests around new features
+ - Documentation and sample text refined to reflect hook/circular features
+
+### Tests
+- Expanded hook and circular-detection test suites (51 tests total)
+
+---
+
 ## [0.3.0] - 2026-01-19
 
 ### Added
@@ -81,15 +100,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Updated README with flatten feature documentation and examples
 - Updated feature comparison table: flatten now marked as supported in v0.3
 - Updated roadmap to reflect completion of flatten feature
+ - Sample mapper and docs aligned with PrimaryAddress usage and FullName mapping
+
+---
+
+## [0.2.0] - 2026-01-18
+
+### Changed
+- Release workflow updates (publish NuGet packages directly to GitHub releases and adjust triggers)
+- Documentation refresh for performance comparison
+- Version bump to 0.1.1 in project files for pipeline alignment
+
+### Fixed
+- CI/release pipeline configuration and branch references
+
+### Notes
+- Feature work originally planned for 0.2.0 was deferred and shipped in later versions (flattening in 0.3.0; lifecycle hooks and circular detection in 0.4.0).
 
 ---
 
 ## Future Roadmap
 
-### 0.2.0
-- [ ] Circular reference detection
-- [ ] Better error messages for complex scenarios
+### 0.5.0
 - [ ] Support for custom collection types
+- [ ] Better error messages for complex scenarios
 
 ### 1.0.0
 - [ ] Expression projection (IQueryable)

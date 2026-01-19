@@ -49,8 +49,10 @@ var userEntity = new UserEntity
 // Create mapper instance
 var mapper = new UserMapper();
 
-// Map entity to DTO
+// Map entity to DTO (baseline)
 var userDto = mapper.MapUser(userEntity);
+// Map with lifecycle hooks (v0.4.0): validation + audit tag
+var userDtoWithHooks = mapper.MapUserWithHooks(userEntity);
 
 // Display results
 Console.WriteLine("Source Entity:");
@@ -74,4 +76,15 @@ Console.WriteLine($"  Address Count: {userDto.Addresses.Count}");
 Console.WriteLine($"  Tags: {string.Join(", ", userDto.Tags)}");
 
 Console.WriteLine("\n=== Mapping completed successfully! ===");
+Console.WriteLine("\nMapped DTO with hooks:");
+Console.WriteLine($"  Id: {userDtoWithHooks.Id}");
+Console.WriteLine($"  FullName: {userDtoWithHooks.FullName}");
+Console.WriteLine($"  Email: {userDtoWithHooks.Email}");
+Console.WriteLine($"  Tags: {string.Join(", ", userDtoWithHooks.Tags)}");
+Console.WriteLine("  Audit trail:");
+foreach (var entry in mapper.AuditTrail)
+{
+    Console.WriteLine($"    - {entry}");
+}
+
 Console.WriteLine("\nTip: Check the 'obj/GeneratedFiles' folder to see the generated mapper code.");

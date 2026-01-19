@@ -111,6 +111,13 @@ internal sealed class MappingCodeEmitter
             AppendLine();
         }
 
+        // BeforeMap hook
+        if (!string.IsNullOrEmpty(method.BeforeMapMethod))
+        {
+            AppendLine($"{method.BeforeMapMethod}({paramName});");
+            AppendLine();
+        }
+
         // Build property mappings
         var mappings = BuildPropertyMappings(method);
 
@@ -118,7 +125,7 @@ internal sealed class MappingCodeEmitter
         var flattenMappings = BuildFlattenMappings(method);
 
         // Check for constructor-based initialization
-        var targetConstructor = GetBestConstructor(method.TargetType, mappings);
+        var targetConstructor = GetBestConstructor(method.TargetType, method.SourceType, mappings);
 
         if (targetConstructor is not null && targetConstructor.Parameters.Length > 0)
         {
@@ -310,7 +317,17 @@ internal sealed class MappingCodeEmitter
     private void EmitPropertyBasedMapping(MapperMethodInfo method, List<PropertyMapping> mappings, List<FlattenMapping> flattenMappings)
     {
         var returnType = method.TargetType.ToDisplayString();
-        AppendLine($"return new {returnType}");
+
+        // If there's an AfterMap hook, we need to store the result in a variable first
+        if (!string.IsNullOrEmpty(method.AfterMapMethod))
+        {
+            AppendLine($"var result = new {returnType}");
+        }
+        else
+        {
+            AppendLine($"return new {returnType}");
+        }
+
         AppendLine("{");
         _indentLevel++;
 
@@ -335,6 +352,14 @@ internal sealed class MappingCodeEmitter
 
         _indentLevel--;
         AppendLine("};");
+
+        // AfterMap hook
+        if (!string.IsNullOrEmpty(method.AfterMapMethod))
+        {
+            AppendLine();
+            AppendLine($"{method.AfterMapMethod}(result);");
+            AppendLine("return result;");
+        }
     }
 
     private void EmitConstructorBasedMapping(
@@ -347,18 +372,26 @@ internal sealed class MappingCodeEmitter
         var ctorParams = new List<string>();
         var remainingMappings = new List<PropertyMapping>(mappings);
         var remainingFlattens = new List<FlattenMapping>(flattenMappings);
+        var sourceProperties = GetAllProperties(method.SourceType)
+            .ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
 
         // Match constructor parameters to mappings
         foreach (var param in constructor.Parameters)
         {
             var mapping = remainingMappings.FirstOrDefault(m =>
-
                 string.Equals(m.Target.Name, param.Name, StringComparison.OrdinalIgnoreCase));
 
             if (mapping is not null)
             {
                 ctorParams.Add(GetPropertyAssignment(mapping, method.ParameterName));
                 remainingMappings.Remove(mapping);
+                continue;
+            }
+
+            // Fallback: match source property by name for constructor parameter
+            if (sourceProperties.TryGetValue(param.Name, out var sourceProp))
+            {
+                ctorParams.Add(GetConstructorParameterAssignment(sourceProp, param.Type, method.ParameterName));
             }
             else
             {
@@ -366,10 +399,21 @@ internal sealed class MappingCodeEmitter
             }
         }
 
-        // If we have remaining properties or flattens, use object initializer
-        if (remainingMappings.Count > 0 || remainingFlattens.Count > 0)
+        // If we have remaining properties, flattens, or AfterMap hook, use a variable
+        var hasAfterMap = !string.IsNullOrEmpty(method.AfterMapMethod);
+        var hasRemaining = remainingMappings.Count > 0 || remainingFlattens.Count > 0;
+
+        if (hasRemaining)
         {
-            AppendLine($"return new {returnType}({string.Join(", ", ctorParams)})");
+            if (hasAfterMap)
+            {
+                AppendLine($"var result = new {returnType}({string.Join(", ", ctorParams)})");
+            }
+            else
+            {
+                AppendLine($"return new {returnType}({string.Join(", ", ctorParams)})");
+            }
+
             AppendLine("{");
             _indentLevel++;
 
@@ -394,10 +438,27 @@ internal sealed class MappingCodeEmitter
 
             _indentLevel--;
             AppendLine("};");
+
+            if (hasAfterMap)
+            {
+                AppendLine();
+                AppendLine($"{method.AfterMapMethod}(result);");
+                AppendLine("return result;");
+            }
         }
         else
         {
-            AppendLine($"return new {returnType}({string.Join(", ", ctorParams)});");
+            if (hasAfterMap)
+            {
+                AppendLine($"var result = new {returnType}({string.Join(", ", ctorParams)});");
+                AppendLine();
+                AppendLine($"{method.AfterMapMethod}(result);");
+                AppendLine("return result;");
+            }
+            else
+            {
+                AppendLine($"return new {returnType}({string.Join(", ", ctorParams)});");
+            }
         }
     }
 
@@ -492,6 +553,44 @@ internal sealed class MappingCodeEmitter
 
         // For value types, use default
         return $"default({type.ToDisplayString()})";
+    }
+
+    private string GetConstructorParameterAssignment(IPropertySymbol sourceProp, ITypeSymbol targetType, string paramName)
+    {
+        var sourceAccess = $"{paramName}.{sourceProp.Name}";
+
+        // Same type
+        if (SymbolEqualityComparer.Default.Equals(sourceProp.Type, targetType))
+        {
+            return sourceAccess;
+        }
+
+        // Nested mapper available
+        var sourceTypeName = GetTypeNameWithoutNullability(sourceProp.Type);
+        var targetTypeName = GetTypeNameWithoutNullability(targetType);
+
+        if (_availableMappers.TryGetValue((sourceTypeName, targetTypeName), out var mapperMethod))
+        {
+            return $"{sourceAccess} is null ? null! : {mapperMethod}({sourceAccess})";
+        }
+
+        // Conversion
+        if (_compilation is CSharpCompilation csharpCompilation)
+        {
+            var conversion = csharpCompilation.ClassifyConversion(sourceProp.Type, targetType);
+            if (conversion.IsImplicit)
+            {
+                return sourceAccess;
+            }
+
+            if (conversion.IsExplicit)
+            {
+                return $"({targetType.ToDisplayString()}){sourceAccess}";
+            }
+        }
+
+        // Fallback
+        return sourceAccess;
     }
 
     private string? TryGetCollectionMapping(ITypeSymbol sourceType, ITypeSymbol targetType, string sourceAccess)
@@ -638,10 +737,13 @@ internal sealed class MappingCodeEmitter
         return false;
     }
 
-    private IMethodSymbol? GetBestConstructor(ITypeSymbol type, List<PropertyMapping> mappings)
+    private IMethodSymbol? GetBestConstructor(ITypeSymbol type, ITypeSymbol sourceType, List<PropertyMapping> mappings)
     {
         if (type is not INamedTypeSymbol namedType)
             return null;
+
+        var sourceProperties = GetAllProperties(sourceType)
+            .ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
 
         var constructors = namedType.Constructors
             .Where(c => c.DeclaredAccessibility == Accessibility.Public && !c.IsStatic)
@@ -655,7 +757,8 @@ internal sealed class MappingCodeEmitter
                 continue;
 
             var matchCount = ctor.Parameters.Count(p =>
-                mappings.Any(m => string.Equals(m.Target.Name, p.Name, StringComparison.OrdinalIgnoreCase)));
+                mappings.Any(m => string.Equals(m.Target.Name, p.Name, StringComparison.OrdinalIgnoreCase)) ||
+                sourceProperties.ContainsKey(p.Name));
 
             if (matchCount == ctor.Parameters.Length)
             {

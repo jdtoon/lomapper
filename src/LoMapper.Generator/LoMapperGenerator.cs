@@ -87,10 +87,12 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
         var sourceType = method.Parameters[0].Type;
         var targetType = method.ReturnType;
 
-        // Get [MapProperty], [MapIgnore], and [FlattenProperty] attributes
+        // Get [MapProperty], [MapIgnore], [FlattenProperty], [BeforeMap], and [AfterMap] attributes
         var propertyMappings = new List<PropertyMappingConfig>();
         var ignoredProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var flattenMappings = new List<FlatteningConfig>();
+        string? beforeMapMethod = null;
+        string? afterMapMethod = null;
 
         foreach (var attr in method.GetAttributes())
         {
@@ -136,6 +138,16 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
                     flattenMappings.Add(new FlatteningConfig(sourcePath!, targetProp!));
                 }
             }
+            else if (attrName == "LoMapper.BeforeMapAttribute" &&
+                     attr.ConstructorArguments.Length >= 1)
+            {
+                beforeMapMethod = attr.ConstructorArguments[0].Value as string;
+            }
+            else if (attrName == "LoMapper.AfterMapAttribute" &&
+                     attr.ConstructorArguments.Length >= 1)
+            {
+                afterMapMethod = attr.ConstructorArguments[0].Value as string;
+            }
         }
 
         return new MapperMethodInfo(
@@ -146,7 +158,9 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
             targetType,
             propertyMappings.ToImmutableArray(),
             ignoredProperties.ToImmutableHashSet(StringComparer.OrdinalIgnoreCase),
-            flattenMappings.ToImmutableArray());
+            flattenMappings.ToImmutableArray(),
+            beforeMapMethod,
+            afterMapMethod);
     }
 
     private static void Execute(
@@ -158,6 +172,25 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
         {
             if (mapper is null) continue;
 
+            // Build a map of all mapper methods for circular reference detection
+            // If multiple methods target the same source/target pair, keep the first to avoid duplicate-key exceptions.
+            var mapperMethodLookup = new Dictionary<(ITypeSymbol, ITypeSymbol), MapperMethodInfo>(new TypePairComparer());
+            foreach (var method in mapper.Methods)
+            {
+                if (!mapperMethodLookup.ContainsKey((method.SourceType, method.TargetType)))
+                {
+                    mapperMethodLookup[(method.SourceType, method.TargetType)] = method;
+                }
+            }
+
+            // Check for circular references in mapper methods
+            foreach (var method in mapper.Methods)
+            {
+                var visited = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+                var path = new List<string>();
+                DetectCircularReferences(method.TargetType, visited, path, context, mapperMethodLookup);
+            }
+
             var emitter = new MappingCodeEmitter(compilation, context, mapper);
             var source = emitter.Emit();
 
@@ -166,5 +199,148 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
                 context.AddSource($"{mapper.ClassName}.g.cs", source);
             }
         }
+    }
+
+    private static void DetectCircularReferences(
+        ITypeSymbol targetType,
+        HashSet<ITypeSymbol> visited,
+        List<string> path,
+        SourceProductionContext context,
+        Dictionary<(ITypeSymbol, ITypeSymbol), MapperMethodInfo> mapperMethodLookup)
+    {
+        // Check if we've already visited this type (indicates a cycle)
+        if (visited.Contains(targetType))
+        {
+            var cyclePath = string.Join(" → ", path) + $" → {targetType.Name}";
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.CircularReference,
+                Location.None,
+                cyclePath));
+            return;
+        }
+
+        visited.Add(targetType);
+        path.Add(targetType.Name);
+
+        // Get the mapper method for this target type to access ignored properties
+        var currentMapper = GetMapperForTargetType(targetType, mapperMethodLookup);
+
+        // Get properties of target type
+        var properties = targetType.GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p => p.GetMethod != null && !p.IsStatic);
+
+        foreach (var targetProp in properties)
+        {
+            // Skip if this property is ignored in the current mapper
+            if (currentMapper != null && currentMapper.IgnoredProperties.Contains(targetProp.Name))
+            {
+                continue;
+            }
+
+            var propType = targetProp.Type;
+
+            // Skip built-in types
+            if (IsBuiltInType(propType))
+                continue;
+
+            // For collections, check the element type
+            if (IsCollectionType(propType))
+            {
+                var elementType = GetCollectionElementType(propType);
+                if (elementType != null && !IsBuiltInType(elementType))
+                {
+                    // Check if there's a mapper for this element type
+                    if (HasMapperForType(elementType, mapperMethodLookup))
+                    {
+                        DetectCircularReferences(elementType, new HashSet<ITypeSymbol>(visited, SymbolEqualityComparer.Default), new List<string>(path), context, mapperMethodLookup);
+                    }
+                }
+                continue;
+            }
+
+            // Check if there's a mapper method for this property type
+            // If not, we don't need to check for cycles since it won't be mapped
+            if (HasMapperForType(propType, mapperMethodLookup))
+            {
+                DetectCircularReferences(propType, new HashSet<ITypeSymbol>(visited, SymbolEqualityComparer.Default), new List<string>(path), context, mapperMethodLookup);
+            }
+        }
+
+        path.RemoveAt(path.Count - 1);
+        visited.Remove(targetType);
+    }
+
+    private static bool HasMapperForType(ITypeSymbol type, Dictionary<(ITypeSymbol, ITypeSymbol), MapperMethodInfo> mapperMethodLookup)
+    {
+        return mapperMethodLookup.Keys.Any(k => SymbolEqualityComparer.Default.Equals(k.Item2, type));
+    }
+
+    private static MapperMethodInfo? GetMapperForTargetType(ITypeSymbol targetType, Dictionary<(ITypeSymbol, ITypeSymbol), MapperMethodInfo> mapperMethodLookup)
+    {
+        var pair = mapperMethodLookup.Keys.FirstOrDefault(k => SymbolEqualityComparer.Default.Equals(k.Item2, targetType));
+        return pair != default ? mapperMethodLookup[pair] : null;
+    }
+
+    private class TypePairComparer : IEqualityComparer<(ITypeSymbol, ITypeSymbol)>
+    {
+        public bool Equals((ITypeSymbol, ITypeSymbol) x, (ITypeSymbol, ITypeSymbol) y)
+        {
+            return SymbolEqualityComparer.Default.Equals(x.Item1, y.Item1) &&
+                   SymbolEqualityComparer.Default.Equals(x.Item2, y.Item2);
+        }
+
+        public int GetHashCode((ITypeSymbol, ITypeSymbol) obj)
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(obj.Item1);
+                hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(obj.Item2);
+                return hash;
+            }
+        }
+    }
+
+    private static bool IsBuiltInType(ITypeSymbol type)
+    {
+        var fullName = type.ToDisplayString();
+        return type.SpecialType != SpecialType.None ||
+               type.TypeKind == TypeKind.Enum ||
+               fullName.StartsWith("System.") && (
+                   fullName == "System.String" ||
+                   fullName == "System.DateTime" ||
+                   fullName == "System.DateTimeOffset" ||
+                   fullName == "System.TimeSpan" ||
+                   fullName == "System.Guid" ||
+                   fullName == "System.Decimal" ||
+                   fullName.StartsWith("System.Nullable<"));
+    }
+
+    private static bool IsCollectionType(ITypeSymbol type)
+    {
+        var fullName = type.ToDisplayString();
+        return fullName.Contains("System.Collections") ||
+               fullName.StartsWith("System.Collections.Generic.List<") ||
+               fullName.StartsWith("System.Collections.Generic.IEnumerable<") ||
+               fullName.StartsWith("System.Collections.Generic.ICollection<") ||
+               fullName.StartsWith("System.Collections.Generic.HashSet<") ||
+               fullName.StartsWith("System.Collections.Generic.Dictionary<") ||
+               type is IArrayTypeSymbol;
+    }
+
+    private static ITypeSymbol? GetCollectionElementType(ITypeSymbol type)
+    {
+        if (type is IArrayTypeSymbol arrayType)
+            return arrayType.ElementType;
+
+        if (type is INamedTypeSymbol namedType && namedType.IsGenericType)
+        {
+            var typeArgs = namedType.TypeArguments;
+            if (typeArgs.Length > 0)
+                return typeArgs[0];
+        }
+
+        return null;
     }
 }
