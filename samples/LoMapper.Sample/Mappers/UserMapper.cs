@@ -27,11 +27,12 @@ public partial class UserMapper
     /// <summary>
     /// Maps a UserEntity to a flattened UserProfileDto.
     /// Demonstrates flattening nested address properties into the top-level DTO.
-    /// The [FlattenProperty] attributes extract Address.City and Address.Country
+    /// The [FlattenProperty] attributes extract PrimaryAddress.City and PrimaryAddress.Country
     /// into separate City and Country properties on the DTO.
     /// </summary>
-    [FlattenProperty("Address.City", nameof(UserProfileDto.City))]
-    [FlattenProperty("Address.Country", nameof(UserProfileDto.Country))]
+    [MapProperty(nameof(UserEntity.FirstName), nameof(UserProfileDto.FullName))]
+    [FlattenProperty("PrimaryAddress.City", nameof(UserProfileDto.City))]
+    [FlattenProperty("PrimaryAddress.Country", nameof(UserProfileDto.Country))]
     public partial UserProfileDto MapUserFlattened(UserEntity entity);
 
     /// <summary>
