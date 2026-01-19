@@ -173,10 +173,15 @@ public sealed class LoMapperGenerator : IIncrementalGenerator
             if (mapper is null) continue;
 
             // Build a map of all mapper methods for circular reference detection
-            var mapperMethodLookup = mapper.Methods.ToDictionary(
-                m => (m.SourceType, m.TargetType),
-                m => m,
-                new TypePairComparer());
+            // If multiple methods target the same source/target pair, keep the first to avoid duplicate-key exceptions.
+            var mapperMethodLookup = new Dictionary<(ITypeSymbol, ITypeSymbol), MapperMethodInfo>(new TypePairComparer());
+            foreach (var method in mapper.Methods)
+            {
+                if (!mapperMethodLookup.ContainsKey((method.SourceType, method.TargetType)))
+                {
+                    mapperMethodLookup[(method.SourceType, method.TargetType)] = method;
+                }
+            }
 
             // Check for circular references in mapper methods
             foreach (var method in mapper.Methods)
